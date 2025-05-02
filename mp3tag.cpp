@@ -4,6 +4,7 @@
 #include <cstring>
 #include <algorithm>
 
+
 // Initialize static genre list
 const std::vector<std::string> Mp3Tag::genreList = {"Blues", "Classic Rock", "Country", "Dance",
     "Disco", "Funk", "Grunge", "Hip-Hop", "Jazz", "Metal", "New Age",
@@ -35,11 +36,11 @@ const std::vector<std::string> Mp3Tag::genreList = {"Blues", "Classic Rock", "Co
     "Synthpop"
 };
 
-Mp3Tag::Mp3Tag(const std::string& filename) : filename(filename) {
+Mp3Tag::Mp3Tag(std::string  filename) : filename(std::move(filename)) {
     std::memset(&tag, 0, sizeof(ID3v1Tag));
 }
 
-bool Mp3Tag::isValidMp3Filename(const std::string& name) const {
+bool Mp3Tag::isValidMp3Filename(const std::string& name) {
     return name.size() > 4 && name.substr(name.size() - 4) == ".mp3";
 }
 
@@ -82,9 +83,9 @@ void Mp3Tag::writeTag() {
     }
 }
 
-std::string Mp3Tag::extractString(const char* field, size_t maxLength) const {
+std::string Mp3Tag::extractString(const char* field, size_t maxLength) {
     size_t len = std::min(maxLength, strlen(field));
-    return std::string(field, len);
+    return {field, static_cast<std::string::size_type>(len)};
 }
 
 void Mp3Tag::displayMetadata() const {
@@ -121,7 +122,58 @@ bool Mp3Tag::updateTitle(const std::string& newTitle) {
     return true;
 }
 
-// Implement other update methods similarly...
+bool Mp3Tag::updateArtist(const std::string& newArtist) {
+    if (newArtist.size() > 30) {
+        std::cerr << "Artist name is too long (max 30 characters).\n";
+        return false;
+    }
+
+    std::memset(tag.artist, '\0', 30);
+    std::strncpy(tag.artist, newArtist.c_str(), 30);
+    writeTag();
+    return true;
+}
+
+bool Mp3Tag::updateAlbum(const std::string& newAlbum) {
+    if (newAlbum.size() > 30) {
+        std::cerr << "Album name is too long (max 30 characters).\n";
+        return false;
+    }
+
+    std::memset(tag.album, '\0', 30);
+    std::strncpy(tag.album, newAlbum.c_str(), 30);
+    writeTag();
+    return true;
+}
+
+bool Mp3Tag::updateYear(const std::string& newYear) {
+    if (newYear.size() > 4) {
+        std::cerr << "Year is too long (max 4 characters).\n";
+        return false;
+    }
+
+    std::memset(tag.year, '\0', 4);
+    std::strncpy(tag.year, newYear.c_str(), 4);
+    writeTag();
+    return true;
+}
+
+bool Mp3Tag::updateTrack(unsigned char newTrack) {
+    tag.track = newTrack;
+    writeTag();
+    return true;
+}
+
+bool Mp3Tag::updateGenre(unsigned char newGenre) {
+    if (newGenre >= genreList.size()) {
+        std::cerr << "Invalid genre index.\n";
+        return false;
+    }
+
+    tag.genre = newGenre;
+    writeTag();
+    return true;
+}
 
 std::string Mp3Tag::getTitle() const { return extractString(tag.title, 30); }
 std::string Mp3Tag::getArtist() const { return extractString(tag.artist, 30); }
@@ -133,7 +185,7 @@ unsigned char Mp3Tag::getGenre() const { return tag.genre; }
 
 std::string Mp3Tag::getGenreString() const {
     if (tag.genre < genreList.size()) {
-        return genreList[tag.genre];
+        return genreList[static_cast<std::vector<std::string>::size_type>(tag.genre)];
     }
     return "Unknown";
 }

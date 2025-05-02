@@ -4,13 +4,12 @@
 
 #include <string>
 #include <fstream>
-#include <array>
 #include <vector>
 
 class Mp3Tag {
 public:
     // Constructor takes a filename
-    Mp3Tag(const std::string& filename);
+    explicit Mp3Tag(std::string  filename);
 
     // Check if file has a valid tag
     bool hasValidTag() const;
@@ -61,12 +60,12 @@ private:
         unsigned char track;
         unsigned char genre;
     };
-    ID3v1Tag tag;
+    ID3v1Tag tag{};
 
     // Helper methods
     void writeTag();
-    std::string extractString(const char* field, size_t maxLength) const;
-    bool isValidMp3Filename(const std::string& name) const;
+    static std::string extractString(const char* field, size_t maxLength) ;
+    static bool isValidMp3Filename(const std::string& name) ;
 
     // Genres list
     static const std::vector<std::string> genreList;
