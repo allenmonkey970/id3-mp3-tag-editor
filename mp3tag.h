@@ -28,6 +28,8 @@ public:
     bool updateYear(const std::string& newYear);
     bool updateTrack(unsigned char newTrack);
     bool updateGenre(unsigned char newGenre);
+    bool createNewTag();
+    bool renameFile(const std::string& format);
 
     // Getters
     std::string getTitle() const;
@@ -38,6 +40,7 @@ public:
     unsigned char getTrack() const;
     unsigned char getGenre() const;
     std::string getGenreString() const;
+    std::string getFilename() const;
 
     // Static method to get genre list
     static const std::vector<std::string>& getGenreList();

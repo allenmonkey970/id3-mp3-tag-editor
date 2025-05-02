@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <limits>
+#include <fstream>
 #include "mp3tag.h"
 
 void displayMenu() {
@@ -13,7 +14,9 @@ void displayMenu() {
     std::cout << "5. Edit Comment\n";
     std::cout << "6. Edit Track Number\n";
     std::cout << "7. Edit Genre\n";
-    std::cout << "8. Exit\n";
+    std::cout << "8. Create New Tag\n";
+    std::cout << "9. Rename File Based on Tags\n";
+    std::cout << "10. Exit\n";
     std::cout << "Enter choice: ";
 }
 
@@ -32,21 +35,55 @@ void displayGenres(const Mp3Tag& mp3) {
     std::cout << "\nCurrent genre: " << mp3.getGenreString() << " (" << static_cast<int>(mp3.getGenre()) << ")\n";
 }
 
+bool fileExists(const std::string& filename) {
+    std::ifstream file(filename);
+    return file.good();
+}
+
 int main() {
     std::string filename;
 
     while (true) {
         // Prompt user for filename
-        std::cout << "Enter MP3 filename: ";
+        std::cout << "Enter MP3 filename (or 'quit' to exit): ";
         std::cin >> filename;
+
+        if (filename == "quit") {
+            break;
+        }
+
+        // Check if the file has the correct extension
+        if (filename.size() < 4 || filename.substr(filename.size() - 4) != ".mp3") {
+            std::cerr << "Error: File must have a .mp3 extension.\n";
+            continue;
+        }
+
+        // Check if the file exists
+        if (!fileExists(filename)) {
+            std::cerr << "Error: File '" << filename << "' does not exist or cannot be read.\n";
+            continue;
+        }
 
         // Create Mp3Tag object
         Mp3Tag mp3(filename);
 
         // Read tag from file
         if (!mp3.readTag()) {
-            std::cerr << "Invalid ID3 tag or file could not be read.\n";
-            continue;
+            std::cout << "No valid ID3v1 tag found in '" << filename << "'. Would you like to create one? (Y/N): ";
+            char response;
+            std::cin >> response;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+            if (toupper(response) == 'Y') {
+                if (mp3.createNewTag()) {
+                    std::cout << "New empty tag created successfully.\n";
+                } else {
+                    std::cout << "Failed to create tag. Please try another file.\n";
+                    continue;
+                }
+            } else {
+                continue;
+            }
         }
 
         std::cout << "File is OK and has a valid ID3v1.1 tag.\n";
@@ -57,7 +94,12 @@ int main() {
             displayMenu();
 
             int choice;
-            std::cin >> choice;
+            if (!(std::cin >> choice)) {
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                std::cout << "Invalid input. Please enter a number.\n";
+                continue;
+            }
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
             std::string newValue;
@@ -93,7 +135,12 @@ int main() {
                     {
                         int trackNum;
                         std::cout << "Enter new track number (0-255): ";
-                        std::cin >> trackNum;
+                        if (!(std::cin >> trackNum)) {
+                            std::cin.clear();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            std::cout << "Invalid input. Please enter a number.\n";
+                            continue;
+                        }
                         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                         if (trackNum >= 0 && trackNum <= 255) {
                             success = mp3.updateTrack(static_cast<unsigned char>(trackNum));
@@ -107,7 +154,12 @@ int main() {
                         displayGenres(mp3);
                         int genreNum;
                         std::cout << "Enter genre number: ";
-                        std::cin >> genreNum;
+                        if (!(std::cin >> genreNum)) {
+                            std::cin.clear();
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            std::cout << "Invalid input. Please enter a number.\n";
+                            continue;
+                        }
                         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                         if (genreNum >= 0 && genreNum < static_cast<int>(Mp3Tag::getGenreList().size())) {
                             success = mp3.updateGenre(static_cast<unsigned char>(genreNum));
@@ -116,7 +168,33 @@ int main() {
                         }
                     }
                     break;
-                case 8: // Exit
+                case 8: // Create New Tag
+                    if (!mp3.hasValidTag()) {
+                        if (mp3.createNewTag()) {
+                            std::cout << "New empty tag created successfully.\n";
+                            mp3.displayMetadata();
+                        } else {
+                            std::cout << "Failed to create new tag.\n";
+                        }
+                    } else {
+                        std::cout << "File already has a tag.\n";
+                    }
+                    break;
+                case 9: // Rename File Based on Tags
+                    {
+                        std::string format;
+                        std::cout << "Enter filename format (use %artist%, %title%, %album%, %year%, %track%):\n";
+                        std::cout << "Example: %artist% - %title% [%year%]\n";
+                        std::getline(std::cin, format);
+
+                        if (mp3.renameFile(format)) {
+                            std::cout << "File renamed successfully to: " << mp3.getFilename() << "\n";
+                        } else {
+                            std::cout << "Failed to rename file.\n";
+                        }
+                    }
+                    break;
+                case 10: // Exit
                     keepEditing = false;
                     break;
                 default:
@@ -124,11 +202,11 @@ int main() {
                     continue;
             }
 
-            if (choice != 8) {
+            if (choice >= 1 && choice <= 7 && choice != 8) {
                 if (success) {
                     std::cout << "Updated metadata:\n";
                     mp3.displayMetadata();
-                } else if (choice >= 1 && choice <= 7) {
+                } else {
                     std::cout << "Failed to update tag.\n";
                 }
             }
@@ -141,6 +219,7 @@ int main() {
         if (toupper(response) == 'N') {
             break;
         }
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
     return 0;
