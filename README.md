@@ -1,5 +1,7 @@
 # ID3 MP3 Tag Editor
-![License](https://img.shields.io/github/license/allenmonkey970/id3-mp3-tag-editor)![C++](https://img.shields.io/badge/language-C%2B%2B-blue)
+![License](https://img.shields.io/github/license/allenmonkey970/id3-mp3-tag-editor)
+![C++](https://img.shields.io/badge/language-C%2B%2B-blue)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--05--02-brightgreen)
 
 A C++ application for viewing and editing ID3 metadata tags in MP3 files.
 
